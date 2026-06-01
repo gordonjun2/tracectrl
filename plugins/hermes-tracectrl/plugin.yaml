@@ -1,0 +1,19 @@
+name: tracectrl
+version: "0.1.0"
+description: "TraceCtrl security observability for Hermes — traces conversations, LLM calls, tool usage, and security events via OpenTelemetry."
+author: TraceCtrl
+requires_env:
+  - TRACECTRL_ENDPOINT
+hooks:
+  - on_session_start
+  - pre_llm_call
+  - pre_api_request
+  - post_api_request
+  - pre_tool_call
+  - post_tool_call
+  - post_llm_call
+  - on_session_end
+  - on_session_finalize
+  - on_gateway_error
+  - pre_approval_request
+  - post_approval_response
