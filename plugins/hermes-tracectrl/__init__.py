@@ -9,21 +9,16 @@ The actual hook handlers live in hooks.py (mirrors src/hooks.ts).
 from __future__ import annotations
 
 import logging
-import sys
+import os
 import threading
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
-
-_PLUGIN_DIR = str(Path(__file__).resolve().parent)
-if _PLUGIN_DIR not in sys.path:
-    sys.path.insert(0, _PLUGIN_DIR)
 
 from opentelemetry.trace import StatusCode
 
-from config import TraceCtrlHermesConfig, load_config, apply_config_to_sdk
-from telemetry import (
+from .config import TraceCtrlHermesConfig, load_config, apply_config_to_sdk
+from .telemetry import (
     TelemetryRuntime,
     init_telemetry,
     get_runtime,
@@ -137,7 +132,7 @@ def register(ctx: Any) -> None:
         )
         return
 
-    from hooks import (
+    from .hooks import (
         on_session_start,
         pre_llm_call,
         pre_api_request,

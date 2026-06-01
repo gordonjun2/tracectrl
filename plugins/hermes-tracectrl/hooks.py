@@ -17,7 +17,7 @@ from typing import Any
 from opentelemetry.trace import SpanKind, StatusCode
 from opentelemetry.trace.propagation import set_span_in_context
 
-from __init__ import (
+from . import (
     TurnState,
     _TRACE_STATES,
     _STATE_LOCK,
@@ -28,8 +28,8 @@ from __init__ import (
     close_state,
     get_config,
 )
-from telemetry import get_runtime
-from security import analyse_tool_call, analyse_message_content
+from .telemetry import get_runtime
+from .security import analyse_tool_call, analyse_message_content
 
 logger = logging.getLogger("tracectrl.hermes")
 
