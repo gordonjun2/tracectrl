@@ -15,6 +15,24 @@ _DEFAULT_SERVICE_NAME = "hermes-agent"
 _DEFAULT_METRICS_INTERVAL_MS = 30_000
 
 
+def _infer_profile_aware_service_name() -> str:
+    explicit = os.getenv("TRACECTRL_SERVICE_NAME")
+    if explicit:
+        return explicit
+
+    profile = os.getenv("HERMES_PROFILE")
+    if profile:
+        return f"hermes-agent.{profile}"
+
+    home = os.getenv("HERMES_HOME", "")
+    if "/profiles/" in home:
+        profile_name = home.rstrip("/").split("/profiles/")[-1]
+        if profile_name:
+            return f"hermes-agent.{profile_name}"
+
+    return _DEFAULT_SERVICE_NAME
+
+
 @dataclass
 class TraceCtrlHermesConfig:
     endpoint: str = _DEFAULT_ENDPOINT_HTTP
@@ -47,7 +65,7 @@ def load_config() -> TraceCtrlHermesConfig:
 
     return TraceCtrlHermesConfig(
         endpoint=os.getenv("TRACECTRL_ENDPOINT", default_endpoint),
-        service_name=os.getenv("TRACECTRL_SERVICE_NAME", _DEFAULT_SERVICE_NAME),
+        service_name=_infer_profile_aware_service_name(),
         api_key=os.getenv("TRACECTRL_API_KEY") or None,
         capture_content=os.getenv("TRACECTRL_CAPTURE_CONTENT", "").lower() in ("true", "1", "yes"),
         protocol=protocol,
