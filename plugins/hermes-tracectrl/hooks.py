@@ -135,8 +135,10 @@ def pre_llm_call(**kwargs: Any) -> None:
             state.provider = kwargs.get("provider", "unknown")
 
         user_message = kwargs.get("user_message", "")
-        if user_message and get_config() and get_config().capture_content:
-            analyse_message_content(user_message, span, tel)
+        if user_message:
+            cfg = get_config()
+            if cfg and cfg.capture_content:
+                analyse_message_content(user_message, span, tel)
 
         logger.debug("tracectrl: agent turn started model=%s call=%d", model, api_call_count)
     except Exception:
@@ -296,8 +298,10 @@ def pre_tool_call(**kwargs: Any) -> None:
             state.tool_spans[tool_call_id or tool_name] = span
 
         args_str = _extract_args_str(args)
-        if args_str and get_config() and get_config().capture_content:
-            span.set_attribute("input.value", args_str)
+        if args_str:
+            cfg = get_config()
+            if cfg and cfg.capture_content:
+                span.set_attribute("input.value", args_str)
 
         analyse_tool_call(tool_name, args_str, span, tel)
 
@@ -325,7 +329,8 @@ def post_tool_call(**kwargs: Any) -> None:
         if span is None:
             return
 
-        if get_config() and get_config().capture_content:
+        cfg = get_config()
+        if cfg and cfg.capture_content:
             try:
                 truncated = result[:2000] if result else ""
                 span.set_attribute("output.value", truncated)
@@ -339,7 +344,7 @@ def post_tool_call(**kwargs: Any) -> None:
         is_error = _has_error(result)
         if is_error:
             span.set_status(StatusCode.ERROR, "Tool returned error")
-            span.set_attribute("tracectrl.error", True)
+            span.set_attribute("tracectrl.error", "true")
             tel.counters.tool_errors.add(1, {"tracectrl.tool.name": tool_name})
         else:
             span.set_status(StatusCode.OK)
@@ -372,11 +377,13 @@ def post_llm_call(**kwargs: Any) -> None:
         )
 
         assistant_response = kwargs.get("assistant_response", "")
-        if assistant_response and get_config() and get_config().capture_content:
-            state.root_span.set_attribute(
-                "tracectrl.message.response_preview",
-                assistant_response[:500],
-            )
+        if assistant_response:
+            cfg = get_config()
+            if cfg and cfg.capture_content:
+                state.root_span.set_attribute(
+                    "tracectrl.message.response_preview",
+                    assistant_response[:500],
+                )
 
         state.root_span.set_status(StatusCode.OK)
         state.root_span.end()

@@ -53,7 +53,7 @@ class TurnState:
 
 
 def _state_key(session_id: str) -> str:
-    return f"{session_id}:{threading.get_ident()}"
+    return session_id
 
 
 def get_state(session_id: str) -> TurnState | None:
@@ -107,10 +107,8 @@ def _start_cleanup_timer() -> None:
                 key for key, state in _TRACE_STATES.items()
                 if now - state.start_time > _STALE_TTL_SECONDS
             ]
-            for key in stale_keys:
-                state = _TRACE_STATES.pop(key, None)
-                if state:
-                    safe_end_span(state.root_span)
+        for key in stale_keys:
+            close_state(key, StatusCode.ERROR, "Session timed out (stale)")
         _start_cleanup_timer()
 
     _CLEANUP_TIMER = threading.Timer(_CLEANUP_INTERVAL_SECONDS, _cleanup)
