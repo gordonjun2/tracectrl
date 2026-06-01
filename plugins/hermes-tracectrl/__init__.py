@@ -9,10 +9,16 @@ The actual hook handlers live in hooks.py (mirrors src/hooks.ts).
 from __future__ import annotations
 
 import logging
+import sys
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+_PLUGIN_DIR = str(Path(__file__).resolve().parent)
+if _PLUGIN_DIR not in sys.path:
+    sys.path.insert(0, _PLUGIN_DIR)
 
 from opentelemetry.trace import StatusCode
 
