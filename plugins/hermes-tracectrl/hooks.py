@@ -92,8 +92,8 @@ def on_session_start(**kwargs: Any) -> None:
 
         tel.counters.messages_received.add(1, {"tracectrl.channel": platform})
         logger.debug("tracectrl: session started sid=%s platform=%s", session_id, platform)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: on_session_start error: %s", exc)
 
 
 def pre_llm_call(**kwargs: Any) -> None:
@@ -141,8 +141,8 @@ def pre_llm_call(**kwargs: Any) -> None:
                 analyse_message_content(user_message, span, tel)
 
         logger.debug("tracectrl: agent turn started model=%s call=%d", model, api_call_count)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: pre_llm_call error: %s", exc)
 
 
 def pre_api_request(**kwargs: Any) -> None:
@@ -167,8 +167,8 @@ def pre_api_request(**kwargs: Any) -> None:
         span.set_attribute("tracectrl.tool_count", kwargs.get("tool_count", 0))
         span.set_attribute("tracectrl.approx_input_tokens", kwargs.get("approx_input_tokens", 0))
         span.set_attribute("tracectrl.request_char_count", kwargs.get("request_char_count", 0))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: pre_api_request error: %s", exc)
 
 
 def post_api_request(**kwargs: Any) -> None:
@@ -265,8 +265,8 @@ def post_api_request(**kwargs: Any) -> None:
             "tracectrl: api request done model=%s tokens=%d/%d",
             model, input_tokens, output_tokens,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: post_api_request error: %s", exc)
 
 
 def pre_tool_call(**kwargs: Any) -> None:
@@ -307,8 +307,8 @@ def pre_tool_call(**kwargs: Any) -> None:
 
         tel.counters.tool_calls.add(1, {"tracectrl.tool.name": tool_name})
         logger.debug("tracectrl: tool call started tool=%s id=%s", tool_name, tool_call_id)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: pre_tool_call error: %s", exc)
 
 
 def post_tool_call(**kwargs: Any) -> None:
@@ -351,8 +351,8 @@ def post_tool_call(**kwargs: Any) -> None:
 
         span.end()
         logger.debug("tracectrl: tool call done tool=%s duration=%dms", tool_name, duration_ms)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: post_tool_call error: %s", exc)
 
 
 def post_llm_call(**kwargs: Any) -> None:
@@ -391,8 +391,8 @@ def post_llm_call(**kwargs: Any) -> None:
 
         tel.counters.messages_sent.add(1)
         logger.debug("tracectrl: turn completed sid=%s", session_id)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: post_llm_call error: %s", exc)
 
 
 def on_session_end(**kwargs: Any) -> None:
@@ -438,8 +438,8 @@ def on_session_end(**kwargs: Any) -> None:
             "tracectrl: session end sid=%s action=%s completed=%s interrupted=%s",
             session_id, action, completed, interrupted,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: on_session_end error: %s", exc)
 
 
 def on_session_finalize(**kwargs: Any) -> None:
@@ -467,8 +467,8 @@ def on_session_finalize(**kwargs: Any) -> None:
             pass
 
         logger.debug("tracectrl: session finalized, flushed")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: on_session_finalize error: %s", exc)
 
 
 def pre_approval_request(**kwargs: Any) -> None:
@@ -504,8 +504,8 @@ def pre_approval_request(**kwargs: Any) -> None:
             "tracectrl.security.max_severity": "medium",
         })
         logger.debug("tracectrl: approval requested command=%s", command[:100])
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: pre_approval_request error: %s", exc)
 
 
 def post_approval_response(**kwargs: Any) -> None:
@@ -528,8 +528,8 @@ def post_approval_response(**kwargs: Any) -> None:
             state.root_span.end()
 
         logger.debug("tracectrl: approval response choice=%s", choice)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: post_approval_response error: %s", exc)
 
 
 def on_gateway_error(**kwargs: Any) -> None:
@@ -569,6 +569,13 @@ def on_gateway_error(**kwargs: Any) -> None:
             for dk, dv in diagnostic.items():
                 attrs[f"tracectrl.diagnostic.{dk}"] = str(dv)
 
+        if error_source in ("inactivity_timeout", "stuck_loop"):
+            attrs["tracectrl.session.state"] = "stuck"
+            if diagnostic and isinstance(diagnostic, dict):
+                seconds = diagnostic.get("seconds_since_activity", 0)
+                if seconds:
+                    attrs["tracectrl.session.age_ms"] = int(float(seconds) * 1000)
+
         span = tel.tracer.start_span(
             span_name,
             kind=SpanKind.INTERNAL,
@@ -586,5 +593,5 @@ def on_gateway_error(**kwargs: Any) -> None:
             "tracectrl: gateway error source=%s type=%s session=%s",
             error_source, error_type, session_key,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("tracectrl: on_gateway_error error: %s", exc)
